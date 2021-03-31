@@ -1,3 +1,5 @@
+name: manual terraform deploy
+
 on:
 
   workflow_dispatch:
