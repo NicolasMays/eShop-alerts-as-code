@@ -42,7 +42,7 @@ Get started with Terraform for Azure [here](https://learn.hashicorp.com/collecti
 
 To create alerts for SLOs we want to deploy a collection of `scheduled query rules alert` resources to Azure. Terraform's documentation for this resource can be found [here](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/monitor_scheduled_query_rules_alert). However this is the basic structure of the resource.
 
-```json
+```
 # example scheduled query rules alert
 resource "azurerm_monitor_scheduled_query_rules_alert" "example" {
   name                = <alert rule name>
@@ -74,7 +74,7 @@ resource "azurerm_monitor_scheduled_query_rules_alert" "example" {
 
 In `variables.tf` we have parameterized any fields that will be reused throughout the deployment of these SLOs. This file declares the structure of variables which we provide values for later.
 
-```json
+```
 # variables.tf
 variable "logAnalyticsResourceID" {
     type        = string
@@ -126,7 +126,7 @@ The `SLOs` variable is a `map` of type `object` which will later allow you to de
 
 In `sched_query_rules_alert.auto.tfvars` we supply values to the variables declared in `variables.tf`. These will be picked up automatically by the Terraform commands in the main deployment file because we supplied the extension `.auto.tfvars`. 
 
-```json
+```
 # sched_query_rules_alert.auto.tfvars
 logAnalyticsResourceID="" #Your Log Analytics Resource ID
 logAnalyticsResourceGroupName="" #Resource Group Name where you've created your Log Analytics Resource 
@@ -184,7 +184,7 @@ This collection of SLOs in the `SLOs` variable will become our SLOs as code and 
 
 Lastly in `main.tf` we take the orchestration of the variable files and finally implement them for deployment.
 
-```json
+```
 # main.tf
 
 # Configure the Azure provider
@@ -240,23 +240,39 @@ The first line in the resource declaration is `for_each = var.SLOs` which access
 
 Using the basic terraform command syntax we can apply these pieces. Move into the working directory:
 
-`cd scheduled_query_alert`
+```powershell
+cd scheduled_query_alert
+```
+
+
 
 Then initialize terraform in the folder:
 
-`terraform init`
+```powershell
+terraform init
+```
+
+
 
 Stage changes to the architecture:
 
-`terraform plan`
+```powershell
+terraform plan
+```
+
+
 
 Lastly, apply the changes to your Azure Subscription:
 
-`terraform apply`
+```powershell
+terraform apply
+```
+
+
 
 ---
 
-Advanced Scenario: Deploying Alerts via Github Actions
+Advanced Scenario: Deploying Alerts via GitHub Actions
 
 Prerequisites:
 
@@ -272,7 +288,7 @@ Prerequisites:
 
 > **_NOTE:_**  Terraform decides which infrastructure to change/create/or destroy based on the context of a `terraform.tfstate` file which is created locally when utilizing terraform commands. If you have done the previous scenario locally you should remove the previously created alerts in your Azure Subscription as we will now be using a cloud hosted `terraform.tfstate` file. 
 
-Step 1: Terraform
+#### Step 1: Terraform
 
 Working Directory:
 
@@ -308,7 +324,7 @@ az storage container create -n terraform-state --account-name schedqueryalertsa
 
 Now that we have some underlying infrastructure prepared we can setup our `main.tf` file to point to our backend. 
 
-```json
+```
 # main.tf
 
 # Configure the Azure provider
@@ -365,7 +381,7 @@ The `terraform` block points to the resources we created in the previous steps, 
 
 In `variables.tf` we will have the same structures declared, that will parametrize what we will pass into our `main.tf` file and declare in our `*.auto.tfvars` file. 
 
-```json
+```
 # variables.tf
 
 variable "logAnalyticsResourceID" {
@@ -416,7 +432,7 @@ variable "SLOs" {
 
 Lastly we modified `sched_query_rules_alert.auto.tfvars` to not include `logAnalyticsResourceID` or `logAnalyticsResourceGroupName`. We will supply these via secrets or command line arguments in our GitHub Actions files. 
 
-```json
+```
 # sched_query_rules_alert.auto.tfvars
 
 resourceRegion="eastus2"
@@ -465,9 +481,13 @@ SLOs = {
 }
 ```
 
-Step 2: GitHub Actions
+
+
+#### Step 2: GitHub Actions
 
 Working Directory: 
+
+`/.github/workflows/`
 
 
 
@@ -480,11 +500,15 @@ The first step is to create a service principle via the Azure CLI that's logged 
 az ad sp create-for-rbac --name "tf-deploy-eshop" --role Contributor --sdk-auth
 ```
 
+
+
 The `--name` field is a name for your service principle. The output of this command should be:
 
-```
+```json
 insert this here...
 ```
+
+
 
 Save the output of this somewhere or have it readily available. In your forked repository navigate to `Settings` and the `Secrets` on the left hand side of the screen.
 
@@ -508,7 +532,7 @@ The name for this secret is `VAR_LA_RESOURCE_ID` and the value can be supplied i
 
 `"logAnalyticsResourceID=<Your Log Analytics Resource ID>"` double quotes included. This maps directly to our `variables.tf` file. 
 
-```JSON
+```
 # variables.tf 
 
 variable "logAnalyticsResourceID" {
