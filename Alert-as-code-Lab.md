@@ -9,8 +9,8 @@ Prerequisites:
 - Azure Subscription
 - Azure CLI Installed and Logged into your Subscription
 - Terraformed Installed: [Terraform: Azure Get Started](https://learn.hashicorp.com/tutorials/terraform/install-cli?in=terraform/azure-get-started)
-- Create a Resource Group and a Log Analytics workspace 
-- Clone the code?
+- Create a Resource Group and a Log Analytics workspace in the respective resource group
+- Clone/fork the code?
 
 Working Directory:
 
@@ -176,7 +176,9 @@ SLOs = {
 }
 ```
 
-The values for `logAnalyticsResourceID` and `logAnalyticsResourceGroupName` are specific your resources in your Azure subscription. After your deploy a `Log Analytics workspace` to your Azure subscription, navigate to the resource and the `Overview` tab in the blade menu. In the top left select `JSON View` and it will let you copy the resource ID to your clipboard and supply it to this file.
+The values for `logAnalyticsResourceID` and `logAnalyticsResourceGroupName` are specific your resources in your Azure subscription. We will use the value `logAnalyticsResourceGroupName="sched_query_alert"`. 
+
+After your deploy a `Log Analytics workspace` to your Azure subscription, navigate to the resource and the `Overview` tab in the blade menu. In the top left select `JSON View` and it will let you copy the resource ID to your clipboard and supply it to this file.
 
 Refer to the SLOs object, which is similar to a JSON Object, instead of using the `:` operator to represent key value pairings, in terraform we use the `=` operator to represent key value parings. We map each component declared in `variables.tf` to describe the respective SLOs. The queries are delimited using Heredoc syntax starting with `<<-EOT` and ending with `EOT` so we do not need to escape characters within our query. 
 
@@ -236,9 +238,9 @@ resource "azurerm_monitor_scheduled_query_rules_alert" "SLO_ALERT" {
 
 
 
-The first line in the resource declaration is `for_each = var.SLOs` which accesses the `SLOs` variable declared in `sched_query_rules_alert.auto.tfvars`. This will iterate over each object declared in the `SLOs` variable. Since we declared 2 SLO objects in the `SLOs` variables, 2 resources will be deployed. Each component of the SLO objects can be accessed respectively via `each.value["<variable name>"]`. Normal variables are accessed via `var.<variable name>`. This iteration over the objects contained in the variable lets us deploy many alerts for SLOs in one deployment and can be utilized in our CI/CD pipelines. 
+The first line in the resource declaration is `for_each = var.SLOs` which accesses the `SLOs` variable declared in `sched_query_rules_alert.auto.tfvars`. This will iterate over each object declared in the `SLOs` variable. Since we declared 2 SLO objects in the `SLOs` variables, 2 resources will be deployed. Each component of the SLO objects can be accessed respectively via `each.value["<variable name>"]`. Normal variables are accessed via `var.<variable name>`. This iteration over the objects contained in the variable lets us deploy many alerts for SLOs in one deployment and can be utilized in our CI/CD pipelines.
 
-Using the basic terraform command syntax we can apply these pieces. Move into the working directory:
+Assuming you are logged into your subscription on the terminal with `az login` . Using the basic terraform command syntax we can apply these pieces. Move into the working directory:
 
 ```powershell
 cd scheduled_query_alert
@@ -278,7 +280,7 @@ Prerequisites:
 
 - All prerequisites outlined in Basic Scenario
 
-- Understanding the Automated alert deployment lab and how terraform interacts with variable files
+- Understanding the basic and how terraform interacts with variable files
 
 - GitHub Account
 
@@ -292,9 +294,9 @@ Prerequisites:
 
 Working Directory:
 
-`/eShop-alerts-as-code/scheduled_query_alert_automated_deploy/`
+​	`/eShop-alerts-as-code/scheduled_query_alert_automated_deploy/`
 
-Since we now have maintainable SLOs as Code, it only makes sense to automate the deployment end to end, so that when we make modifications, our alerts are changed and deployed. 
+Since we now have maintainable SLOs as Code, it only makes sense to automate the deployment end to end, so that when we make modifications, our alerts are changed and deployed.
 
 Our first step will be to create a resource group, if you already haven't.
 
@@ -302,7 +304,7 @@ Our first step will be to create a resource group, if you already haven't.
 az group create -g <resource-group-name> -l <region>
 ```
 
-For our purposes we will use the region `eastus2` and our resource group will be `sched_query_alert`. Feel free to adjust these to your own preferences. 
+For our purposes we will use the region `eastus2` and our resource group will be `sched_query_alert`. Feel free to adjust these to your own preferences.
 
 If you're comfortable in the portal we need to create a `storage account` in that resource group and a `storage container` in our respective storage account. We can also accomplish this with the AZ CLI. The reason we are doing this is so we have a persistent `.terraform.tfstate` to reference from our GitHub action's environment. 
 
@@ -487,7 +489,7 @@ SLOs = {
 
 Working Directory: 
 
-`/.github/workflows/`
+​	`/.github/workflows/`
 
 
 
@@ -505,16 +507,27 @@ az ad sp create-for-rbac --name "tf-deploy-eshop" --role Contributor --sdk-auth
 The `--name` field is a name for your service principle. The output of this command should be:
 
 ```json
-insert this here...
+{
+  "clientId": "<client_id>",
+  "clientSecret": "<client_secret>",
+  "subscriptionId": "<subscription_id>",
+  "tenantId": "<tenant_id>",
+  "activeDirectoryEndpointUrl": "https://login.microsoftonline.com",
+  "resourceManagerEndpointUrl": "https://management.azure.com/",
+  "activeDirectoryGraphResourceId": "https://graph.windows.net/",
+  "sqlManagementEndpointUrl": "https://management.core.windows.net:8443/",
+  "galleryEndpointUrl": "https://gallery.azure.com/",
+  "managementEndpointUrl": "https://management.core.windows.net/"
+}
 ```
 
+The fields you will need are `clientId`, `clientSecret`, `subscriptionId`, `tenantId`. 
 
-
-Save the output of this somewhere or have it readily available. In your forked repository navigate to `Settings` and the `Secrets` on the left hand side of the screen.
+Save the output of this somewhere or have it readily available. In your forked repository navigate to `Settings` and then `Secrets` on the left hand side of the screen.
 
 On the `Actions secrets` screen click `New repository secret`. 
 
-In the `Name` field supply `TF_ARM_CLIENT_ID` and in the `Value` field supply the value from the  service principle output for `ClientId` <--- double check this. 
+In the `Name` field supply `TF_ARM_CLIENT_ID` and in the `Value` field supply the value from the  service principle output for `clientId`, quotes omitted. 
 
 Repeat the process for the following authentication secrets:
 
@@ -541,15 +554,12 @@ variable "logAnalyticsResourceID" {
 }
 ```
 
-And we will reference these variables and secrets directly in the terraform commands. 
-
-`/eShop-alerts-as-code/.github/workflows/`
+And we will reference these variables and secrets directly in the terraform commands with the parameters `-var="variableName=variableValue`. 
 
 There are 3 workflows for GitHub actions. 
 
 1. A manual end to end deployment
 2. On a pull request, verify and stage changes 
-
 3. On a merge (or commit to main), verify and stage changes, then apply them. 
 
 
@@ -600,10 +610,10 @@ jobs:
         run: terraform init
       
       - name: Terraform Plan
-        run: terraform plan -var="logAnalyticsResourceGroupName=eShop-Alert-Automation" -var=${{ secrets.VAR_LA_RESOURCE_ID }}
+        run: terraform plan -var="logAnalyticsResourceGroupName=sched_query_alert" -var=${{ secrets.VAR_LA_RESOURCE_ID }}
 
       - name: Terraform Apply
-        run: terraform apply -var="logAnalyticsResourceGroupName=eShop-Alert-Automation" -var=${{ secrets.VAR_LA_RESOURCE_ID }} -auto-approve
+        run: terraform apply -var="logAnalyticsResourceGroupName=sched_query_alert" -var=${{ secrets.VAR_LA_RESOURCE_ID }} -auto-approve
 ```
 
 
@@ -624,6 +634,8 @@ If you have set this up correctly you should be able to go to your repository, s
 
 
 
+
+
 Workflow 2: Pull Request 
 
  ``` YAML
@@ -631,7 +643,7 @@ name: pull request validation
 
 on:
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
 
 
 defaults:
@@ -659,10 +671,12 @@ jobs:
         run: terraform init
       
       - name: Terraform Plan
-        run: terraform plan -var="logAnalyticsResourceGroupName=eShop-Alert-Automation" -var=${{ secrets.VAR_LA_RESOURCE_ID }}
+        run: terraform plan -var="logAnalyticsResourceGroupName=sched_query_alert" -var=${{ secrets.VAR_LA_RESOURCE_ID }}
  ```
 
-The changes made here are in the `on` block and specifies to run the jobs on a pull request to master. The steps actions only handles an initialize and a plan which will both verify any changes made to the code as well as stage the changes to be applied. 
+The changes made here are in the `on` block and specifies to run the jobs on a `pull request` to main. The steps actions only handles an initialize and a plan which will both verify any changes made to the code as well as stage the changes to be applied. 
+
+
 
 
 
@@ -673,7 +687,7 @@ name: apply on push
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
 
 defaults:
   run:
@@ -700,30 +714,12 @@ jobs:
         run: terraform init
       
       - name: Terraform Apply
-        run: terraform apply -var="logAnalyticsResourceGroupName=eShop-Alert-Automation" -var=${{ secrets.VAR_LA_RESOURCE_ID }} -auto-approve
+        run: terraform apply -var="logAnalyticsResourceGroupName=sched_query_alert" -var=${{ secrets.VAR_LA_RESOURCE_ID }} -auto-approve
 ```
 
-The changes made here are in the `on` block and specifies to run the job on a push to master. Ideally this would happen after a pull request validation and it would apply the staged changes in the `terraform apply` step in the previous workflow. 
+The changes made here are in the `on` block and specifies to run the job on a `push` to main. Ideally this would happen after a pull request validation and it would apply the staged changes in the `terraform apply` step in the previous workflow. 
 
 
 
-This concludes the basics of deploying automatic alerts via GitHub actions. With an extended knowledge of terraform you can customize these actions and apply the logic to deploying other pieces of infrastructure in terraform. 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+This concludes the basics of deploying automatic alerts via GitHub actions. With an extended knowledge of terraform you can customize these actions and apply the logic to deploying other pieces of infrastructure in terraform.
 

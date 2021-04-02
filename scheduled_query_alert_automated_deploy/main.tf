@@ -1,8 +1,8 @@
 # Configure the Azure provider
 terraform {
     backend "azurerm" {
-        resource_group_name  = "rg-gh-alertAsCodeLab-tf"
-        storage_account_name = "saghalertcodelabtf"
+        resource_group_name  = "sched_query_alert"
+        storage_account_name = "schedqueryalertsa"
         container_name       = "terraform-state"
         key                  = "terraform.tfstate"
     }

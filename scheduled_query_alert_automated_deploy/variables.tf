@@ -1,5 +1,3 @@
-
-
 variable "logAnalyticsResourceID" {
     type        = string
     description = "Resource ID of the Log Analytics workspace."

@@ -1,5 +1,5 @@
-#logAnalyticsResourceID="" #Your Log Analytics Resource ID
-#logAnalyticsResourceGroupName="" #Resource Group Name where you've created your Log Analytics Resource 
+logAnalyticsResourceID="" # Your Log Analytics Resource ID
+logAnalyticsResourceGroupName="sched_query_alert" # Resource Group Name where you've created your Log Analytics Resource 
 resourceRegion="eastus2"
 
 # SLOs as Code Example 
