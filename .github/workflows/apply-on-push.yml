@@ -2,7 +2,7 @@ name: apply on push
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
 
 defaults:
   run:
